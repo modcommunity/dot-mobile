@@ -9,7 +9,7 @@ extends Node
 
 ## A script error aborts one section, not the run; the totals catch that.
 const SECTIONS := 9
-const CHECKS := 120
+const CHECKS := 125
 
 var _passed := 0
 var _failed := 0
@@ -328,6 +328,24 @@ func _test_controls() -> void:
 	kind[0] = DotMobileAutoFire.TARGET_FRIEND
 	await get_tree().process_frame
 	_check(not c.is_held(&"fire"), "and lets go on a teammate")
+	c._input(_touch(6, Vector2(w * 0.2, h * 0.5), true))
+	c.paused = true
+	_check(not c.visible and int(sampler.describe()["move_finger"]) == -1, "pausing hides it and lifts its fingers")
+	kind[0] = DotMobileAutoFire.TARGET_ENEMY
+	await get_tree().process_frame
+	_check(not c.is_held(&"fire"), "and a paused overlay never fires")
+	kind[0] = DotMobileAutoFire.TARGET_FRIEND
+	c.paused = false
+	c._input(_touch(7, Vector2(w * 0.2, h * 0.5), true))
+	var other := DotFpsTouchSampler.new(tun)
+	c.setup(other, layout)
+	_check(c.sampler == other and int(sampler.describe()["move_finger"]) == -1, "a new sampler: the old one's fingers lift")
+	other.handle_event(_touch(8, Vector2(w * 0.2, h * 0.5), true))
+	_check(int(other.describe()["move_finger"]) == -1, "the new one refuses touches the game forwards")
+	sampler.handle_event(_touch(9, Vector2(w * 0.2, h * 0.5), true))
+	_check(int(sampler.describe()["move_finger"]) == 9, "and the old one gets its own filter back")
+	sampler.handle_event(_touch(9, Vector2(w * 0.2, h * 0.5), false))
+	sampler = other
 	rules.schemes = DotMobileRules.SCHEME_DRAG
 	await get_tree().process_frame
 	c._input(_touch(4, Vector2(w * 0.2, h * 0.5), true))

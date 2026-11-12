@@ -44,6 +44,8 @@ Left-handed play swaps the sides. The sampler still decides by `x < width * move
 
 When touch turns off or the mirror changes while fingers are down, the overlay lifts them on the sampler, so nobody is left walking.
 
+Set `paused` while a menu, chat or console has the screen: the overlay hides, lifts its fingers and stops gyro, aim assist and auto-fire, so a tap meant for the menu never lands on a button. A game with two samplers (offline and online) calls `setup` again with the other one; the old sampler gets its fingers lifted, its bits released and its own filter back.
+
 ## The server's rules
 
 `DotMobileRules` holds what the server allows. `bind_cvars(add)` registers the cvars on a server; `follow_cvars(source)` follows the replicated values on a client (the same pattern as dot-player's view rules). Every setter clamps; `set_cvar` refuses a value it cannot read.

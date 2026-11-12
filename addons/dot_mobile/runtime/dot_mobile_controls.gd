@@ -49,8 +49,17 @@ var ignore_fn: Callable = Callable()
 var buttons: DotMobileButtons = null
 var sampler: DotFpsSampler = null
 
-## Whether the overlay is showing and taking touches: a touch device (or the player's override) and the server allows it.
+## Whether the overlay is showing and taking touches: a touch device (or the player's override), the server allows it
+## and it is not [member paused].
 var touch: bool = false
+## True while a menu, chat or console has the screen: the overlay hides, lifts its fingers and stops gyro, aim assist and
+## auto-fire, so a tap meant for the menu is never a button.
+var paused: bool = false:
+	set(value):
+		if value != paused:
+			paused = value
+			if is_inside_tree():
+				refresh()
 ## [member prefs] as [member rules] allow them, from the last [method refresh].
 var effective: DotMobilePrefs = DotMobilePrefs.new()
 
@@ -71,6 +80,16 @@ var _look_finger: int = -1
 ## Hands over the game's sampler and its buttons: dot-ui's dictionaries (id, label, offset, radius) plus an optional
 ## "hold": a DotFpsCommand bit the overlay holds on the sampler while the button (or auto-fire, for [constant FIRE]) is down.
 func setup(p_sampler: DotFpsSampler, layout: Array[Dictionary]) -> void:
+	# Another sampler (offline and online play each keep one): the old one gets its fingers, bits and filter back.
+	if sampler != null and p_sampler != sampler:
+		_drop_fingers()
+		_release_all_holds()
+		autofire.reset()
+		if _touch_sampler != null:
+			_touch_sampler.ignore_fn = _game_ignore
+		if ignore_fn == _game_ignore:
+			ignore_fn = Callable()
+		_game_ignore = Callable()
 	sampler = p_sampler
 	_touch_sampler = p_sampler as DotFpsTouchSampler
 	# The game's own filter (a menu button, say) moves to the overlay, which now decides which touches reach the sampler.
@@ -120,7 +139,7 @@ func refresh() -> void:
 		rules.changed.connect(_queue_refresh)
 	var was_touch := touch
 	var was_mirrored := effective.left_handed
-	touch = rules.touch_active(prefs, DotPlatform.has_touch()) and _touch_sampler != null
+	touch = rules.touch_active(prefs, DotPlatform.has_touch()) and _touch_sampler != null and not paused
 	effective = rules.resolve(prefs, touch)
 	visible = touch
 	if buttons != null:
@@ -233,7 +252,7 @@ func _process(delta: float) -> void:
 	super._process(delta)
 	if sampler == null:
 		return
-	var live := not live_fn.is_valid() or bool(live_fn.call())
+	var live := not paused and (not live_fn.is_valid() or bool(live_fn.call()))
 	var turned := Vector2.ZERO
 	if touch and gyro.is_running():
 		turned = gyro.take(effective.gyro_sensitivity, effective.gyro_invert_y)
@@ -358,7 +377,7 @@ func _draw_stick() -> void:
 func describe() -> Dictionary:
 	var out := super()
 	out.merge({
-		"touch": touch, "effective": effective.describe(), "rules": rules.describe(), "gyro": gyro.describe(),
+		"touch": touch, "paused": paused, "effective": effective.describe(), "rules": rules.describe(), "gyro": gyro.describe(),
 		"autofire": autofire.describe(), "move_finger": _move_finger, "look_finger": _look_finger,
 		"aim_target": aim_assist.last_target,
 	})
