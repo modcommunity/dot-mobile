@@ -1,0 +1,29 @@
+# Godot 4
+.godot/
+/android/
+
+# Sibling repositories. For local development, symlink each:
+#   ln -s ../../dot-core/addons/dot_core addons/dot_core
+# and the same for the others. Consumers copy them into their own project.
+/addons/dot_core
+/addons/dot_ui
+/addons/dot_player_controller
+/addons/dot_profile
+/addons/dot_net
+/addons/dot_player
+/addons/dot_sim
+/addons/dot_bot
+/addons/dot_bot_record
+/addons/dot_sql
+/addons/godot-sqlite
+
+# Exports
+build/
+export_presets.cfg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
